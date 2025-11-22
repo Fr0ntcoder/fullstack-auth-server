@@ -6,7 +6,7 @@ import {
 	forwardRef
 } from '@nestjs/common'
 import { Request } from 'express'
-import { TokenType, User } from 'generated/prisma'
+import { TokenType } from 'generated/prisma'
 import { v4 as uuidv4 } from 'uuid'
 
 import { AuthService } from '@/auth/auth.service'
@@ -73,10 +73,8 @@ export class EmailConfirmationService {
 		return this.authService.saveSession(req, existingUser)
 	}
 
-	public async sendVerificationToken(user: User) {
-		const verificationToken = await this.generateVerificationToken(
-			user.email
-		)
+	public async sendVerificationToken(email: string) {
+		const verificationToken = await this.generateVerificationToken(email)
 
 		await this.mailService.sendConfiramationEmail(
 			verificationToken.email,

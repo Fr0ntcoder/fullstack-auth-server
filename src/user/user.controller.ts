@@ -10,14 +10,14 @@ import { UserService } from './user.service'
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
-	@Auth(UserRole.ADMIN)
+	@Auth(UserRole.REGULAR)
 	@HttpCode(HttpStatus.OK)
 	@Get('profile')
 	public async findProfile(@Authorized('id') userId: string) {
 		return this.userService.findById(userId)
 	}
 
-  @Auth(UserRole.ADMIN)
+	@Auth(UserRole.REGULAR)
 	@HttpCode(HttpStatus.OK)
 	@Get('by-id/:id')
 	public async findById(@Param('id') id: string) {

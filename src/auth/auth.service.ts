@@ -15,6 +15,7 @@ import { AuthMethod, User } from 'generated/prisma'
 import { ProviderService } from '@/auth/provider/provider.service'
 import { EmailConfirmationService } from '@/email-confirmation/email-confirmation.service'
 import { PrismaService } from '@/prisma/prisma.service'
+import { TwoFactorAuthService } from '@/two-factor-auth/two-factor-auth.service'
 import { UserService } from '@/user/user.service'
 
 import { LoginDto } from './dto/login.dto'
@@ -23,12 +24,13 @@ import { RegisterDto } from './dto/register.dto'
 @Injectable()
 export class AuthService {
 	public constructor(
+		@Inject(forwardRef(() => EmailConfirmationService))
+		private readonly emailConfirmationService: EmailConfirmationService,
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
 		private readonly configService: ConfigService,
 		private readonly providerService: ProviderService,
-		@Inject(forwardRef(() => EmailConfirmationService))
-		private readonly emailConfirmationService: EmailConfirmationService
+		private readonly twoFactoryAuthService: TwoFactorAuthService
 	) {}
 	public async register(req: Request, dto: RegisterDto) {
 		const isExist = await this.userService.findByEmail(dto.email)
@@ -48,7 +50,7 @@ export class AuthService {
 			false
 		)
 
-		await this.emailConfirmationService.sendVerificationToken(newUser)
+		await this.emailConfirmationService.sendVerificationToken(newUser.email)
 
 		return {
 			message: 'Регистрация прошла успешно'
@@ -67,9 +69,26 @@ export class AuthService {
 			throw new UnauthorizedException('Неверный пароль')
 		}
 		if (!user.isVerified) {
-			await this.emailConfirmationService.sendVerificationToken(user)
+			await this.emailConfirmationService.sendVerificationToken(
+				user.email
+			)
 			throw new UnauthorizedException(
 				'Ваш email не подтвержден.Проверьте ваш email и подтвердите адрес'
+			)
+		}
+
+		if (user.isTwoFaсtorAuth) {
+			if (!dto.code) {
+				await this.twoFactoryAuthService.sendTwoFactorToken(user.email)
+
+				return {
+					message:
+						'Проверьте ваш email.Нужен код двухфакторной аутентицификации.'
+				}
+			}
+			await this.twoFactoryAuthService.validateTwoFactorToken(
+				user.email,
+				dto.code
 			)
 		}
 
