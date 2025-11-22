@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { ProviderModule } from './auth/provider/provider.module';
 import { MailModule } from './mail/mail.module';
+import { EmailConfirmationModule } from './email-confirmation/email-confirmation.module';
 
 @Module({
 	imports: [
@@ -19,7 +20,8 @@ import { MailModule } from './mail/mail.module';
 		AuthModule,
 		UserModule,
 		ProviderModule,
-		MailModule
+		MailModule,
+		EmailConfirmationModule
 	]
 })
 export class AppModule {}

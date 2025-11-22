@@ -1,9 +1,11 @@
 import {
 	ConflictException,
+	Inject,
 	Injectable,
 	InternalServerErrorException,
 	NotFoundException,
-	UnauthorizedException
+	UnauthorizedException,
+	forwardRef
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { verify } from 'argon2'
@@ -11,6 +13,7 @@ import { Request, Response } from 'express'
 import { AuthMethod, User } from 'generated/prisma'
 
 import { ProviderService } from '@/auth/provider/provider.service'
+import { EmailConfirmationService } from '@/email-confirmation/email-confirmation.service'
 import { PrismaService } from '@/prisma/prisma.service'
 import { UserService } from '@/user/user.service'
 
@@ -23,7 +26,9 @@ export class AuthService {
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
 		private readonly configService: ConfigService,
-		private readonly providerService: ProviderService
+		private readonly providerService: ProviderService,
+		@Inject(forwardRef(() => EmailConfirmationService))
+		private readonly emailConfirmationService: EmailConfirmationService
 	) {}
 	public async register(req: Request, dto: RegisterDto) {
 		const isExist = await this.userService.findByEmail(dto.email)
@@ -42,7 +47,12 @@ export class AuthService {
 			AuthMethod.CREDENTIALS,
 			false
 		)
-		return this.saveSession(req, newUser)
+
+		await this.emailConfirmationService.sendVerificationToken(newUser)
+
+		return {
+			message: 'Регистрация прошла успешно'
+		}
 	}
 	public async login(req: Request, dto: LoginDto) {
 		const user = await this.userService.findByEmail(dto.email)
@@ -55,6 +65,12 @@ export class AuthService {
 
 		if (!isValidPassword) {
 			throw new UnauthorizedException('Неверный пароль')
+		}
+		if (!user.isVerified) {
+			await this.emailConfirmationService.sendVerificationToken(user)
+			throw new UnauthorizedException(
+				'Ваш email не подтвержден.Проверьте ваш email и подтвердите адрес'
+			)
 		}
 
 		return this.saveSession(req, user)
@@ -101,7 +117,7 @@ export class AuthService {
 			})
 		}
 
-    return this.saveSession(req, user)
+		return this.saveSession(req, user)
 	}
 
 	public async logout(req: Request, res: Response): Promise<void> {
