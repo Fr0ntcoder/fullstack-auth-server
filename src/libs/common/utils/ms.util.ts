@@ -63,12 +63,14 @@ export function ms(timeString: string | number): number {
 	}
 
 	const normalizedString = timeString.toLowerCase().trim()
-	const pattern = /^(\d+(?:\.\d+)?)\s+([a-zA-Z]+)$/
+
+	// Обновленное регулярное выражение - пробел стал необязательным
+	const pattern = /^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)$/
 	const match = normalizedString.match(pattern)
 
 	if (!match) {
 		throw new Error(
-			`Неверный формат времени: "${timeString}". Используйте формат "500 ms", "1 minute", "2 hours" и т.д.`
+			`Неверный формат времени: "${timeString}". Используйте формат "500ms", "500 ms", "1 minute", "2 hours" и т.д.`
 		)
 	}
 
