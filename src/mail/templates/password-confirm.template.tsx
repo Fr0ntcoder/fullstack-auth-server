@@ -4,7 +4,7 @@ interface Props {
 }
 
 export function PasswordConfirmTemplate({ domain, token }: Props) {
-	const link = `${domain}/auth/new-verification?token=${token}`
+	const link = `${domain}/auth/new-password?token=${token}`
 
 	return `
       <!DOCTYPE html>
